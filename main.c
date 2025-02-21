@@ -18,11 +18,11 @@ int main(int argc, char *argv[]) {
             char *firstPart = strtok(input, " ");
             char *secondPart = strtok(NULL, "");
 
-            // echo ----------------------------------------------
+            // echo keyword----------------------------------------------
 
             if (strcmp(firstPart, "echo") == 0) {
                 printf("%s\n", secondPart);
-                // type ------------------------------------------
+                // type keyword ------------------------------------------
 
             } else if (strcmp(firstPart, "type") == 0) {
                 char cmd[256];
