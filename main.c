@@ -69,6 +69,19 @@ int main() {
                 printf("cat: missing filename\n");
             }
         }
+
+        if (cmd && strcmp(cmd, "exit") == 0) {
+            if (cmd && strcmp(cmd, "exit") == 0) {
+                char *code_str = strtok(NULL, "");
+                int exit_code = 0;
+
+                if (code_str) {
+                    exit_code = atoi(code_str);
+                }
+
+                exit(exit_code);
+            }
+        }
     }
 
     return 0;
