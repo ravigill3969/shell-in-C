@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,17 +16,58 @@ int main() {
 
         input[strcspn(input, "\n")] = '\0';  // trim newline
 
+        // taking out cmd name
         char *cmd = strtok(input, " ");
+
+        // echo
         if (cmd && strcmp(cmd, "echo") == 0) {
             char *rest = strtok(NULL, "");
             if (rest) echo(rest);
         }
 
+        // pwd
         if (cmd && strcmp(cmd, "pwd") == 0) {
             pwd();
         }
+
+        // ls
         if (cmd && strcmp(cmd, "ls") == 0) {
-            ls();
+            bool showHiddenFiles = 0;
+
+            char *rest = strtok(NULL, "");
+
+            if (rest && strcmp(rest, "-a") == 0) {
+                showHiddenFiles = 1;
+            }
+
+            ls(showHiddenFiles);
+        }
+
+        // whoami
+        // if (cmd && strcmp(cmd, "whoami") == 0) {
+        //     whoami();
+        // }
+
+        if (cmd && strcmp(cmd, "cd") == 0) {
+            char *dirOrFileName = "";
+
+            char *rest = strtok(NULL, "");
+            if (rest) {
+                dirOrFileName = rest;
+            }
+            cd(dirOrFileName);
+        }
+
+        if (cmd && strcmp(cmd, "cat") == 0) {
+            char *fileName;
+
+            char *rest = strtok(NULL, "");
+            if (rest) {
+                fileName = rest;
+                cat_file(fileName);
+            } else {
+                printf("cat: missing filename\n");
+            }
         }
     }
 

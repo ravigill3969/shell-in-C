@@ -2,6 +2,7 @@
 
 #include <dirent.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,7 +22,7 @@ struct linux_dirent64 {
 
 // Buffer size for reading directory entries
 #define BUF_SIZE 1024
-// print current location
+// print current location function
 void pwd() {
     char buf[1024];
     syscall(SYS_getcwd, buf, sizeof(buf));
@@ -41,7 +42,7 @@ void print_visually(const char *str) {
     }
 }
 
-// echo in here
+// echo function in here
 int echo(char *input) {
     int no_newline = 0;
     int visual = 0;
@@ -78,8 +79,8 @@ int echo(char *input) {
     return 0;
 }
 
-//ls to list all the files or dir inside of current 
-int ls() {
+// ls to list all the files or dir inside of current
+int ls(bool showHiddenFiles) {
     int fd = syscall(SYS_open, ".", O_RDONLY | O_DIRECTORY);
     if (fd < 0) return 1;
 
@@ -91,8 +92,13 @@ int ls() {
         while (bpos < nread) {
             struct linux_dirent64 *d = (struct linux_dirent64 *)(buf + bpos);
 
-            // Avoid writing hidden files (optional)
-            if (d->d_name[0] != '.') {
+            char dot = '.';
+
+            if (showHiddenFiles) {
+                dot = ' ';
+            }
+
+            if (d->d_name[0] != dot) {
                 syscall(SYS_write, 1, d->d_name, strlen(d->d_name));
                 syscall(SYS_write, 1, "\n", 1);
             }
@@ -103,4 +109,51 @@ int ls() {
 
     syscall(SYS_close, fd);
     return 0;
+}
+
+int cd(const char *dirOrFileName) {
+    // cd functionality here
+    char buf[1024];
+
+    if (syscall(SYS_getcwd, buf, sizeof(buf)) == -1) {
+        return 1;
+    }
+
+    if (syscall(SYS_chdir, dirOrFileName) == -1) {
+        return 1;
+    }
+
+    if (syscall(SYS_getcwd, buf, sizeof(buf)) == -1) {
+        return 1;
+    }
+
+    return 0;
+}
+
+void cat_file(const char *filenames) {
+    char buffer[1024];
+    char input[1024];
+    strncpy(input, filenames, sizeof(input) - 1);
+    input[sizeof(input) - 1] = '\0';
+
+    char *file = strtok(input, " ");
+    while (file) {
+        int fd = syscall(SYS_open, file, O_RDONLY);
+        if (fd < 0) {
+            perror(file);
+            file = strtok(NULL, " ");
+            continue;
+        }
+
+        ssize_t bytes;
+        while ((bytes = syscall(SYS_read, fd, buffer, sizeof(buffer))) > 0) {
+            syscall(SYS_write, STDOUT_FILENO, buffer, bytes);
+        }
+
+        syscall(SYS_close, fd);
+
+        printf("\n\n");
+
+        file = strtok(NULL, " ");
+    }
 }
