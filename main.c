@@ -3,48 +3,32 @@
 #include <string.h>
 #include <unistd.h>
 
-void print_visually(const char *str) {
-    for (int i = 0; str[i] != '\0'; i++) {
-        unsigned char ch = str[i];
-        if (ch < 32 || ch == 127) {
-            printf("^%c", ch ^ 64);
-        } else {
-            putchar(ch);
-        }
-    }
-}
+// void print_visually(const char *str) {
+//     for (int i = 0; str[i] != '\0'; i++) {
+//         unsigned char ch = str[i];
+//         if (ch < 32 || ch == 127) {
+//             printf("^%c", ch ^ 64);
+//         } else {
+//             putchar(ch);
+//         }
+//     }
+// }
 
 int echo(char *input) {
+    char *flag = strtok(input, " ");  // store flag or first word
+
     int no_newline = 0;
-    int visual = 0;
+    int visuals = 0;
 
-    char *token = strtok(input, " ");
-    while (token && token[0] == '-') {
-        if (strcmp(token, "-n") == 0)
+    if (flag[0] == '-') {
+        if (flag[1] == 'n') {
             no_newline = 1;
-        else if (strcmp(token, "-v") == 0)
-            visual = 1;
-        else
-            break;
-        token = strtok(NULL, " ");
-    }
-
-    char output[100] = "";
-    if (token) {
-        strcat(output, token);
-        char *next = strtok(NULL, "");
-        if (next) {
-            strcat(output, " ");
-            strcat(output, next);
+        } else if (flag[1] == 'v') {
+            visuals = 1;
         }
     }
 
-    if (visual)
-        print_visually(output);
-    else
-        printf("%s", output);
-
-    if (!no_newline) printf("\n");
+    char *rest = strtok(NULL, "\0");
 
     return 0;
 }
