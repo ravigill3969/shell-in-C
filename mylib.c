@@ -111,6 +111,7 @@ int ls(bool showHiddenFiles) {
     return 0;
 }
 
+//cd
 int cd(const char *dirOrFileName) {
     // cd functionality here
     char buf[1024];
@@ -130,6 +131,7 @@ int cd(const char *dirOrFileName) {
     return 0;
 }
 
+//cat-file
 void cat_file(const char *filenames) {
     char buffer[1024];
     char input[1024];

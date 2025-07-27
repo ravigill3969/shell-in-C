@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/syscall.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "mylib.h"
@@ -14,7 +15,7 @@ int main() {
         char input[1024];
         if (!fgets(input, sizeof(input), stdin)) break;
 
-        input[strcspn(input, "\n")] = '\0';  // trim newline
+        input[strcspn(input, "\n")] = '\0';
 
         // taking out cmd name
         char *cmd = strtok(input, " ");
@@ -48,6 +49,7 @@ int main() {
         //     whoami();
         // }
 
+        // cd
         if (cmd && strcmp(cmd, "cd") == 0) {
             char *dirOrFileName = "";
 
@@ -58,6 +60,7 @@ int main() {
             cd(dirOrFileName);
         }
 
+        // cat
         if (cmd && strcmp(cmd, "cat") == 0) {
             char *fileName;
 
@@ -70,16 +73,42 @@ int main() {
             }
         }
 
+        // exit
         if (cmd && strcmp(cmd, "exit") == 0) {
-            if (cmd && strcmp(cmd, "exit") == 0) {
-                char *code_str = strtok(NULL, "");
-                int exit_code = 0;
+            char *code_str = strtok(NULL, "");
+            int exit_code = 0;
 
-                if (code_str) {
-                    exit_code = atoi(code_str);
+            if (code_str) {
+                exit_code = atoi(code_str);
+            }
+
+            exit(exit_code);
+        }
+
+        // fork
+
+        if (strchr(input, '|') != NULL) {
+            if (cmd) {
+                pid_t pid = fork();
+                if (pid == 0) {
+                    char *argv[64];
+                    argv[0] = cmd;
+                    int i = 1;
+                    char *arg = strtok(NULL, " ");
+                    while (arg && i < 63) {
+                        argv[i++] = arg;
+                        arg = strtok(NULL, " ");
+                    }
+                    argv[i] = NULL;
+
+                    execvp(cmd, argv);
+                    perror("Command not found");
+                    exit(1);
+                } else if (pid > 0) {
+                    wait(NULL);
+                } else {
+                    perror("fork failed");
                 }
-
-                exit(exit_code);
             }
         }
     }
