@@ -111,7 +111,7 @@ int ls(bool showHiddenFiles) {
     return 0;
 }
 
-//cd
+// cd
 int cd(const char *dirOrFileName) {
     // cd functionality here
     char buf[1024];
@@ -131,7 +131,7 @@ int cd(const char *dirOrFileName) {
     return 0;
 }
 
-//cat-file
+// cat-file
 void cat_file(const char *filenames) {
     char buffer[1024];
     char input[1024];
@@ -153,9 +153,44 @@ void cat_file(const char *filenames) {
         }
 
         syscall(SYS_close, fd);
-
         printf("\n\n");
 
         file = strtok(NULL, " ");
     }
+}
+
+int grep(const char *word, const char *filenames) {
+    char files_copy[1024];
+    strncpy(files_copy, filenames, sizeof(files_copy));
+    files_copy[sizeof(files_copy) - 1] = '\0';
+
+    char *file_name = strtok(files_copy, " ");
+
+    while (file_name) {
+        FILE *fptr = fopen(file_name, "r");
+        if (!fptr) {
+            perror(file_name);
+            file_name = strtok(NULL, " ");
+            continue;
+        }
+
+        char line[1024];
+        while (fgets(line, sizeof(line), fptr)) {
+            if (strstr(line, word)) {
+                printf("%s: %s", file_name, line);
+            }
+        }
+
+        fclose(fptr);
+        file_name = strtok(NULL, " ");
+    }
+
+    return 0;
+}
+
+
+void clear() {
+    // ANSI escape code to clear screen and move cursor to top-left
+    printf("\033[2J\033[H");
+    fflush(stdout);  // Ensure it flushes to terminal
 }

@@ -7,6 +7,9 @@
 #include <unistd.h>
 
 #include "mylib.h"
+#include "utils/utils.h"
+
+int forkClone(char *cmd);
 
 int main() {
     setbuf(stdout, NULL);
@@ -17,7 +20,14 @@ int main() {
 
         input[strcspn(input, "\n")] = '\0';
 
-        // taking out cmd name
+        bool hasPipe = checkPipe(input);
+
+        // fork
+        if (hasPipe) {
+            forkClone(input);
+            continue;
+        }
+
         char *cmd = strtok(input, " ");
 
         // echo
@@ -43,11 +53,6 @@ int main() {
 
             ls(showHiddenFiles);
         }
-
-        // whoami
-        // if (cmd && strcmp(cmd, "whoami") == 0) {
-        //     whoami();
-        // }
 
         // cd
         if (cmd && strcmp(cmd, "cd") == 0) {
@@ -85,33 +90,103 @@ int main() {
             exit(exit_code);
         }
 
-        // fork
+        // grep
+        if (cmd && strcmp(cmd, "grep") == 0) {
+            char *word = strtok(NULL, " ");
+            char *file_token = strtok(NULL, "");
 
-        if (strchr(input, '|') != NULL) {
-            if (cmd) {
-                pid_t pid = fork();
-                if (pid == 0) {
-                    char *argv[64];
-                    argv[0] = cmd;
-                    int i = 1;
-                    char *arg = strtok(NULL, " ");
-                    while (arg && i < 63) {
-                        argv[i++] = arg;
-                        arg = strtok(NULL, " ");
-                    }
-                    argv[i] = NULL;
-
-                    execvp(cmd, argv);
-                    perror("Command not found");
-                    exit(1);
-                } else if (pid > 0) {
-                    wait(NULL);
-                } else {
-                    perror("fork failed");
-                }
+            if (word == NULL || file_token == NULL) {
+                printf("Usage: grep <word> <file1> [file2 ...]\n");
+            } else {
+                grep(word, file_token);
             }
         }
+
+        // clear
+        if (cmd && strcmp(cmd, "clear") == 0) {
+            clear();
+        }
     }
+
+    return 0;
+}
+
+int forkClone(char *cmd) {
+    char *leftCmd = strtok(cmd, "|");
+    char *rightCmd = strtok(NULL, "");
+
+    if (!leftCmd || !rightCmd) {
+        printf("Invalid pipe command\n");
+        return 1;
+    }
+
+    // Strip leading/trailing spaces
+    while (*leftCmd == ' ') leftCmd++;
+    while (*rightCmd == ' ') rightCmd++;
+
+    int fd[2];
+    if (pipe(fd) == -1) {
+        perror("pipe failed");
+        return 1;
+    }
+
+    pid_t pid1 = fork();
+    if (pid1 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+
+    if (pid1 == 0) {
+        // child → runs left command → write to pipe
+        close(fd[0]);
+        dup2(fd[1], STDOUT_FILENO);
+        close(fd[1]);
+
+        char *args[10];
+        int i = 0;
+        char *token = strtok(leftCmd, " ");
+        while (token && i < 9) {
+            args[i++] = token;
+            token = strtok(NULL, " ");
+        }
+        args[i] = NULL;
+
+        execvp(args[0], args);
+        perror("execvp leftCmd failed");
+        exit(1);
+    }
+
+    pid_t pid2 = fork();
+    if (pid2 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+
+    if (pid2 == 0) {
+        close(fd[1]);
+        dup2(fd[0], STDIN_FILENO);
+        close(fd[0]);
+
+        // Tokenize right command
+        char *args[10];
+        int i = 0;
+        char *token = strtok(rightCmd, " ");
+        while (token && i < 9) {
+            args[i++] = token;
+            token = strtok(NULL, " ");
+        }
+        args[i] = NULL;
+
+        execvp(args[0], args);
+        perror("execvp rightCmd failed");
+        exit(1);
+    }
+
+    // Parent: Close both ends and wait
+    close(fd[0]);
+    close(fd[1]);
+    wait(NULL);
+    wait(NULL);
 
     return 0;
 }
